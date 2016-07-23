@@ -1,7 +1,6 @@
 'use strict';
 /* eslint indent: [error, 4] */
 
-const Promise = require('bluebird');
 const MongoClient = require('mongodb');
 
 function defaultSerializeFunction(session) {
@@ -126,7 +125,7 @@ module.exports = function connectMongo(connect) {
             let removeQuery = { expires: { $lt: new Date() } };
             switch (this.autoRemove) {
             case 'native':
-                return this.collection.ensureIndexAsync({ expires: 1 }, { expireAfterSeconds: 0 });
+                return this.collection.ensureIndex({ expires: 1 }, { expireAfterSeconds: 0 });
             case 'interval':
                 this.timer = setInterval(() => this.collection.remove(removeQuery, { w: 0 }), this.autoRemoveInterval * 1000 * 60);
                 this.timer.unref();
@@ -149,11 +148,6 @@ module.exports = function connectMongo(connect) {
             }
             this.collectionReadyPromise = undefined;
             this.collection = collection;
-
-            // Promisify used collection methods
-            ['count', 'findOne', 'remove', 'drop', 'update', 'ensureIndex'].forEach(method => {
-                collection[method + 'Async'] = Promise.promisify(collection[method], { context: collection });
-            });
 
             return this;
         }
@@ -191,7 +185,7 @@ module.exports = function connectMongo(connect) {
 
         get(sid, callback) {
             return this.collectionReady()
-                .then(collection => collection.findOneAsync({
+                .then(collection => collection.findOne({
                     _id: this.computeStorageId(sid),
                     $or: [
                         { expires: { $exists: false } },
@@ -244,7 +238,7 @@ module.exports = function connectMongo(connect) {
             }
 
             return this.collectionReady()
-                .then(collection => collection.updateAsync({ _id: this.computeStorageId(sid) }, s, { upsert: true }))
+                .then(collection => collection.update({ _id: this.computeStorageId(sid) }, s, { upsert: true }))
                 .then(rawResponse => {
                     if (rawResponse.result.upserted) {
                         this.emit('create', sid);
@@ -284,7 +278,7 @@ module.exports = function connectMongo(connect) {
             }
 
             return this.collectionReady()
-                .then(collection => collection.updateAsync({ _id: this.computeStorageId(sid) }, { $set: updateFields }))
+                .then(collection => collection.update({ _id: this.computeStorageId(sid) }, { $set: updateFields }))
                 .then(result => {
                     if (result.nModified === 0) {
                         throw new Error('Unable to find the session to touch');
@@ -297,20 +291,20 @@ module.exports = function connectMongo(connect) {
 
         destroy(sid, callback) {
             return this.collectionReady()
-                .then(collection => collection.removeAsync({ _id: this.computeStorageId(sid) }))
+                .then(collection => collection.remove({ _id: this.computeStorageId(sid) }))
                 .then(() => this.emit('destroy', sid))
                 .nodeify(callback);
         }
 
         length(callback) {
             return this.collectionReady()
-                .then(collection => collection.countAsync({}))
+                .then(collection => collection.count({}))
                 .nodeify(callback);
         }
 
         clear(callback) {
             return this.collectionReady()
-                .then(collection => collection.dropAsync())
+                .then(collection => collection.drop())
                 .nodeify(callback);
         }
 
