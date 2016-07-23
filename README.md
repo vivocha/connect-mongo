@@ -14,10 +14,12 @@ MongoDB session store for [Connect](https://github.com/senchalabs/connect) and [
 * Support all Connect versions
 * Support [Mongoose](http://mongoosejs.com/index.html) `>= 2.6`, `3.x` and `4.x`
 * Support [native MongoDB driver](http://mongodb.github.io/node-mongodb-native/) `>= 1.2`, `2.x`
-* Support Node.js `0.10`, `0.12`, `4.x`, `5.x`, `6.x` and all [io.js](https://iojs.org) versions
+* Support Node.js `v0.12`, `v4`, `v5` and `v6`
 * Support [MongoDB](https://www.mongodb.com/) up to `3.2`
 
-For older Node.js versions `0.10`, `0.12` and io.js, please read the [Node.js compatibility section](#old-nodejs-versions-compatibility)
+For Node.js `v0.12` and io.js, please read the [Node.js compatibility section](#old-nodejs-versions-compatibility).
+
+For Node.js `v0.10`, please refer to the [v1.x branch](https://github.com/kcbanner/connect-mongo/tree/v1.x).
 
 ## Usage
 
@@ -131,7 +133,7 @@ A `MongoStore` instance will emit the following events:
 
 ## Old Node.js versions compatibility
 
-For versions `0.10`, `0.12` and io.js, you must use the ES5 fallback:
+For versions `0.12` and io.js, you must use the ES5 build:
 ```js
 var MongoStore = require('connect-mongo/es5')(session);
 ```
