@@ -1,6 +1,11 @@
 'use strict';
 const MongoClient = require('mongodb');
 
+function handleAsCallback(promise, cb) {
+  promise.then(value => cb(null, value)).catch(err => cb(err));
+  return promise;
+}
+
 function defaultSerializeFunction(session) {
   // Copy each property of the session to a new object
   const obj = {};
@@ -182,7 +187,7 @@ module.exports = function connectMongo(connect) {
     /* Public API */
 
     get(sid, callback) {
-      return this.collectionReady()
+      const promise = this.collectionReady()
         .then(collection => collection.findOne({
           _id: this.computeStorageId(sid),
           $or: [
@@ -199,8 +204,9 @@ module.exports = function connectMongo(connect) {
             this.emit('touch', sid);
             return s;
           }
-        })
-        .nodeify(callback);
+        });
+
+      return handleAsCallback(promise, callback);
     }
 
     set(sid, session, callback) {
@@ -235,7 +241,7 @@ module.exports = function connectMongo(connect) {
         s.lastModified = new Date();
       }
 
-      return this.collectionReady()
+      const promise = this.collectionReady()
         .then(collection => collection.update({ _id: this.computeStorageId(sid) }, s, { upsert: true }))
         .then(rawResponse => {
           if (rawResponse.result.upserted) {
@@ -244,8 +250,9 @@ module.exports = function connectMongo(connect) {
             this.emit('update', sid);
           }
           this.emit('set', sid);
-        })
-        .nodeify(callback);
+        });
+
+      return handleAsCallback(promise, callback);
     }
 
     touch(sid, session, callback) {
@@ -275,7 +282,7 @@ module.exports = function connectMongo(connect) {
         updateFields.expires = new Date(Date.now() + this.ttl * 1000);
       }
 
-      return this.collectionReady()
+      const promise = this.collectionReady()
         .then(collection => collection.update({ _id: this.computeStorageId(sid) }, { $set: updateFields }))
         .then(result => {
           if (result.nModified === 0) {
@@ -283,27 +290,31 @@ module.exports = function connectMongo(connect) {
           } else {
             this.emit('touch', sid);
           }
-        })
-        .nodeify(callback);
+        });
+
+      return handleAsCallback(promise, callback);
     }
 
     destroy(sid, callback) {
-      return this.collectionReady()
+      const promise = this.collectionReady()
         .then(collection => collection.remove({ _id: this.computeStorageId(sid) }))
-        .then(() => this.emit('destroy', sid))
-        .nodeify(callback);
+        .then(() => this.emit('destroy', sid));
+
+      return handleAsCallback(promise, callback);
     }
 
     length(callback) {
-      return this.collectionReady()
-        .then(collection => collection.count({}))
-        .nodeify(callback);
+      const promise = this.collectionReady()
+        .then(collection => collection.count({}));
+
+      return handleAsCallback(promise, callback);
     }
 
     clear(callback) {
-      return this.collectionReady()
-        .then(collection => collection.drop())
-        .nodeify(callback);
+      const promise = this.collectionReady()
+        .then(collection => collection.drop());
+
+      return handleAsCallback(promise, callback);
     }
 
     close() {
